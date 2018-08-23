@@ -68,7 +68,7 @@ def runNN(xTrain, yTrain, xTest, hidden_layers = [5]):
         inputs = num_features
         outputs = num_classes
         layers = [inputs] + hidden_layers + [outputs]
-
+        
         # Create a matrix of weights for each layer
         W = [tf.get_variable("weights-" + str(i),
                              shape=[layers[i], layers[i + 1]],
@@ -82,11 +82,12 @@ def runNN(xTrain, yTrain, xTest, hidden_layers = [5]):
                              dtype=tf.float32,
                              initializer=tf.glorot_uniform_initializer())
                              for i in range(len(layers) - 1)]
-        
+
+        # Feed-forward
         activations = [None for i in range(len(layers))]
         activations[0] = X
         for i in range(0, len(activations) - 1):
-            weighted_sum = tf.matmul(activations[i], W[i]) + b[i]
+            weighted_sum = tf.add(tf.matmul(activations[i], W[i]), b[i])
             activations[i + 1] = tf.nn.sigmoid(weighted_sum)
 
         '''
@@ -97,9 +98,9 @@ def runNN(xTrain, yTrain, xTest, hidden_layers = [5]):
         # Flatten from [[a], [b], [c]] to [a, b, c]
         Y_pred = tf.reshape(activations[-1], [-1])
         
-        loss = tf.reduce_mean(tf.losses.mean_squared_error(Y, Y_pred))
+        loss = tf.losses.mean_squared_error(Y, Y_pred)
     
-    opt = tf.train.GradientDescentOptimizer(0.01)
+    opt = tf.train.GradientDescentOptimizer(0.005)
     opt_operation = opt.minimize(loss)
 
     init = tf.global_variables_initializer()

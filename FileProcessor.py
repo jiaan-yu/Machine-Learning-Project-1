@@ -8,7 +8,8 @@ from Constants import *
 def processTrainingFile(file):
 
     trainReal, devReal, sourceDict, sinkDict = getEdges(file)
-    trainFake, devFake = getFakeEdges(sourceDict, len(trainReal) + len(devReal))
+    trainFake, devFake = \
+               getFakeEdges(sourceDict, sinkDict, len(trainReal) + len(devReal))
 
     xTrain = trainReal + trainFake
     yTrain = [REAL for i in range(len(trainReal))] \
@@ -63,18 +64,13 @@ def getEdges(file):
 ################################################################################
 
 # Returns a list of N fake edges that do not exist in the training or test data
-def getFakeEdges(sourceDict, n):
+def getFakeEdges(sourceDict, sinkDict, n):
 
     fakeEdges = []
 
     # Make a list of all nodes that appear in the training data
     potentialSources = list(sourceDict.keys())
-    potentialSinks = []
-    for key in sourceDict.keys():
-        for value in sourceDict[key]:
-            potentialSinks.append(value)
-        potentialSinks.append(key)
-    potentialSinks = list(set(potentialSinks))
+    potentialSinks = list(sinkDict.keys())
 
     while (len(fakeEdges) < n):
         source = random(potentialSources)

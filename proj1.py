@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from Constants import *
 from Evaluation import evaluate, printAccuracy
 from W5_Adaptation import runNN
+from FeatureProcessor import processFeatures
 from NeighbourClassifier import neighbourClassifier
 from FileProcessor import processTrainingFile, processTestFile
 
@@ -21,7 +22,7 @@ def plotData(features, labels):
     reals = []
     fakes = []
 
-    for i in range(len(features)):
+    for i in range(len(labels)):
         if (labels[i] > 0.5):
             reals.append(features[i])
         else:
@@ -85,30 +86,6 @@ def saveFile(data):
 
 ################################################################################
 
-# Returns True if (sink -> source)
-def isSymmetric(source, sink, sourceDict):
-    return 1.0 if (source in sourceDict.get(sink, [])) else 0.0
-
-################################################################################
-
-# (source -> sink) is likely if (source -> mid) && (mid -> sink)
-def isTransitive(source, sink, sourceDict):
-
-    count = 0
-    total = 0
-
-    for mid in sourceDict.get(source, []):
-        if (sink in sourceDict.get(mid, [])):
-            count += 1
-        total += 1
-
-    try:
-        return count / total
-    except:
-        return 0.0
-
-################################################################################
-
 # Shuffles two lists around (both are shuffled in the same way)
 def shuffleLists(x, y):
 
@@ -123,66 +100,6 @@ def shuffleLists(x, y):
         newY.append(y[num])
 
     return newX, newY
-
-################################################################################
-
-# Returns source's similarity to people who follow sink
-def sourceSimilarity(source, sink, sourceDict, sinkDict):
-
-    averageSimilarity = 0.0
-    following = sourceDict.get(source, [])
-    a = len(following)
-
-    for follower in sinkDict.get(sink, []):
-        b = len(sourceDict.get(follower, []))
-        union = len(list(set(following + sourceDict.get(follower, []))))
-        intersect = a + b - union
-        similarity = intersect / union
-        averageSimilarity += similarity
-
-    try:
-        averageSimilarity /= len(sinkDict.get(sink, []))
-        return averageSimilarity
-    except:
-        return 0.0
-
-################################################################################
-
-# Returns sink's similarity to people that source is following
-def sinkSimilarity(source, sink, sourceDict, sinkDict):
-
-    averageSimilarity = 0.0
-    followers = sinkDict.get(sink, [])
-    a = len(followers)
-
-    for following in sourceDict.get(source, []):
-        b = len(sinkDict.get(following, []))
-        union = len(list(set(followers + sinkDict.get(following, []))))
-        intersect = a + b - union
-        similarity = intersect / union
-        averageSimilarity += similarity
-
-    try:
-        averageSimilarity /= len(sourceDict.get(source, []))
-        return averageSimilarity
-    except:
-        return 0.0
-
-################################################################################
-
-# Converts the given x data to our features
-def processFeatures(x, sourceDict, sinkDict):
-
-    newX = []
-
-    for (source, sink) in x:
-        # f1 = isSymmetric(source, sink, sourceDict)
-        # f2 = isTransitive(source, sink, sourceDict)
-        f3 = sourceSimilarity(source, sink, sourceDict, sinkDict)
-        f4 = sinkSimilarity(source, sink, sourceDict, sinkDict)
-        newX.append((f3, f4))
-
-    return newX
 
 ################################################################################
 
@@ -214,17 +131,13 @@ xDev, yDev = shuffleLists(xDev, yDev)
 
 predictions = runNN(xTrain, yTrain, xDev, hidden_layers = [5])
 
-print("First 10 predictions:")
-print(predictions[:10])
-
 printAccuracy(yDev, predictions)
 
 '''
 evaluate(yDev, predictions)
 writeToFile(predictions)
+plotData(xDev, yDev)
 '''
-
-# plotData(xDev, yDev)
 
 totalEnd = timer()
 print("Total elapsed time: {:.2f} secs".format(totalEnd - totalStart))

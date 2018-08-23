@@ -12,6 +12,9 @@ TRAIN_FILE = "train.txt"
 # The name of the file containing the test data
 TEST_FILE = "test-public.txt"
 
+# The file containing our processes test instances
+TEST_FEATURES_FILE = "test-features.txt"
+
 # The prefix of the file that we save our predictions to
 SAVE_FILE = "predictions-"
 
@@ -26,7 +29,7 @@ TIME_LIMIT = 200.0
 BATCH_SIZE = 100
 
 # The number of epochs to run the neural network in TensorFlow for
-EPOCHS = 100
+EPOCHS = 50
 
 # The limit for the number of training instances of each type (REAL + FAKE)
 TRAINING_LIMIT = 25000

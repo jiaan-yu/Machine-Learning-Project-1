@@ -3,17 +3,28 @@ from Constants import *
 ################################################################################
 
 # Converts the given x data to our features
-def processFeatures(x, sourceDict, sinkDict):
+def processFeatures(x, sourceDict, sinkDict, verbose = False):
 
     newX = []
+
+    count = 0
+    total = len(x)
+
+    start = timer()
 
     for (source, sink) in x:
         # f1 = isSymmetric(source, sink, sourceDict)
         # f2 = isTransitive(source, sink, sourceDict)
-        f3 = sourceSimilarity(source, sink, sourceDict, sinkDict)
-        f4 = sinkSimilarity(source, sink, sourceDict, sinkDict)
+        f1, f3 = sourceSimilarity(source, sink, sourceDict, sinkDict)
+        f2, f4 = sinkSimilarity(source, sink, sourceDict, sinkDict)
         
-        newX.append((f3, f4))
+        newX.append((f1, f2, f3, f4))
+
+        if (verbose):
+            count += 1
+            end = timer()
+            print("Completed {} / {} ({:.2f} secs)"
+                  .format(count, total, end - start))
 
     return newX
 
@@ -47,6 +58,7 @@ def isTransitive(source, sink, sourceDict):
 def sourceSimilarity(source, sink, sourceDict, sinkDict):
 
     averageSimilarity = 0.0
+    maxSimilarity = 0.0
     following = sourceDict.get(source, [])
     a = len(following)
 
@@ -57,15 +69,19 @@ def sourceSimilarity(source, sink, sourceDict, sinkDict):
         intersect = a + b - union
         similarity = intersect / union
         averageSimilarity += similarity
+        
+        if (similarity > maxSimilarity):
+            maxSimilarity = similarity
+        
 
     neighbourCount = len(sinkDict.get(sink, []))
 
     # Normalise to range [-1, 1]
     if (neighbourCount > 0):
         averageSimilarity /= neighbourCount
-        return 2.0 * averageSimilarity - 1.0
+        return 2.0 * averageSimilarity - 1.0, 2.0 * maxSimilarity - 1.0
     else:
-        return -1.0
+        return -1.0, -1.0
     
 ################################################################################
 
@@ -73,6 +89,7 @@ def sourceSimilarity(source, sink, sourceDict, sinkDict):
 def sinkSimilarity(source, sink, sourceDict, sinkDict):
 
     averageSimilarity = 0.0
+    maxSimilarity = 0.0
     followers = sinkDict.get(sink, [])
     a = len(followers)
 
@@ -84,13 +101,16 @@ def sinkSimilarity(source, sink, sourceDict, sinkDict):
         similarity = intersect / union
         averageSimilarity += similarity
 
+        if (similarity > maxSimilarity):
+            maxSimilarity = similarity
+
     neighbourCount = len(sourceDict.get(source, []))
 
     # Normalise to range [-1, 1]
     if (neighbourCount > 0):
         averageSimilarity /= neighbourCount
-        return 2.0 * averageSimilarity - 1.0
+        return 2.0 * averageSimilarity - 1.0, 2.0 * maxSimilarity - 1.0
     else:
-        return -1.0
+        return -1.0, -1.0
 
 ################################################################################

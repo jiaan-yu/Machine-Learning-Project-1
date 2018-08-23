@@ -5,9 +5,9 @@ from Constants import *
 ################################################################################
 
 # Takes the training file and returns lists of training and test edges
-def processTrainingFile(file):
+def processTrainingFile(file, verbose = False):
 
-    trainReal, devReal, sourceDict, sinkDict = getEdges(file)
+    trainReal, devReal, sourceDict, sinkDict = getEdges(file, verbose)
     trainFake, devFake = \
                getFakeEdges(sourceDict, sinkDict, len(trainReal) + len(devReal))
 
@@ -24,7 +24,7 @@ def processTrainingFile(file):
 ################################################################################
 
 # Processes a file and returns a list and dictionary detailing the edges
-def getEdges(file):
+def getEdges(file, verbose):
 
     data = open(file, 'r')
     nodes = []
@@ -40,24 +40,30 @@ def getEdges(file):
             nodes.append(sink)
         nodes.append(source)
 
-    print("Number of nodes: {}".format(len(list(set(nodes)))))
-    print("Number of edges: {}".format(len(edges)))    
+    if (verbose):
+        print("Number of nodes: {}".format(len(list(set(nodes)))))
+        print("Number of edges: {}".format(len(edges)))    
 
     # Randomise edges and reduce to appropriate sizes
     shuffle(edges)
-    edges = edges[:TRAINING_LIMIT + DEV_LIMIT]
     trainReal = edges[:TRAINING_LIMIT]
     devReal = edges[-DEV_LIMIT:]
+
+    # Our dictionaries should be unaware of the development data
+    edges = edges[:-DEV_LIMIT]
 
     sourceDict = {}
     sinkDict = {}
     
-    for (source, sink) in trainReal:
+    for (source, sink) in edges:
         sourceDict[source] = sourceDict.get(source, [])
         sourceDict[source].append(sink)
         sinkDict[sink] = sinkDict.get(sink, [])
         sinkDict[sink].append(source)
-        
+
+    if (verbose):
+        print("sourceDict contains {} keys".format(len(sourceDict.keys())))
+        print("sinkDict contains {} keys".format(len(sinkDict.keys())))
 
     return trainReal, devReal, sourceDict, sinkDict
 

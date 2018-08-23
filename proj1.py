@@ -5,6 +5,7 @@ from Constants import *
 from Evaluation import evaluate, printAccuracy
 from W5_Adaptation import runNN
 from FeatureProcessor import processFeatures
+from SplitClassifier import splitClassifier
 from NeighbourClassifier import neighbourClassifier
 from FileProcessor import processTrainingFile, processTestFile
 
@@ -103,6 +104,9 @@ def shuffleLists(x, y):
 
 ################################################################################
 
+# Attempt 1
+predictions = splitClassifier(TEST_FEATURES_FILE)
+
 totalStart = timer()
 
 start = timer()
@@ -130,7 +134,6 @@ xTrain, yTrain = shuffleLists(xTrain, yTrain)
 xDev, yDev = shuffleLists(xDev, yDev)
 
 predictions = runNN(xTrain, yTrain, xDev, hidden_layers = [5])
-
 printAccuracy(yDev, predictions)
 
 '''

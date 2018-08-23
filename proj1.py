@@ -16,13 +16,24 @@ def randomClassifier(x):
 ################################################################################
 
 # Plots the given data with the colour representing real and fake
-def plotData(edges):
+def plotData(features, labels):
 
-    half = int(len(edges) / 2)
-    x = [edges[i][0] for i in range(len(edges))]
-    y = [edges[i][1] for i in range(len(edges))]
-    plt.scatter(x[half:], y[half:], color = 'blue')
-    plt.scatter(x[:half], y[:half], color = 'orange')
+    reals = []
+    fakes = []
+
+    for i in range(len(features)):
+        if (labels[i] > 0.5):
+            reals.append(features[i])
+        else:
+            fakes.append(features[i])
+
+    xReal = [reals[i][0] for i in range(len(reals))]
+    yReal = [reals[i][1] for i in range(len(reals))]
+    xFake = [fakes[i][0] for i in range(len(fakes))]
+    yFake = [fakes[i][1] for i in range(len(fakes))]
+    
+    plt.scatter(xReal, yReal, color = 'blue')
+    plt.scatter(xFake, yFake, color = 'orange')
     plt.show()
 
 ################################################################################
@@ -74,29 +85,27 @@ def saveFile(data):
 
 ################################################################################
 
-# (source -> sink) is likely if (sink -> source)
-def symmetricClassifier(xTest, edgeDict):
-
-    predictions = []
-    for (source, sink) in xTest:
-        pred = 1.0 if (source in edgeDict.get(sink, [])) else 0
-        predictions.append(pred)
-
-    return predictions
+# Returns True if (sink -> source)
+def isSymmetric(source, sink, sourceDict):
+    return 1.0 if (source in sourceDict.get(sink, [])) else 0.0
 
 ################################################################################
 
 # (source -> sink) is likely if (source -> mid) && (mid -> sink)
-def transitiveClassifier(xTest, edgeDict):
+def isTransitive(source, sink, sourceDict):
 
-    predictions = []
+    count = 0
+    total = 0
 
-    for (source, sink) in xTest:
-        pred = sum([1 if sink in edgeDict.get(mid, []) else 0
-                    for mid in edgeDict[source]]) / len(edgeDict[source])
-        predictions.append(pred)
+    for mid in sourceDict.get(source, []):
+        if (sink in sourceDict.get(mid, [])):
+            count += 1
+        total += 1
 
-    return predictions
+    try:
+        return count / total
+    except:
+        return 0.0
 
 ################################################################################
 
@@ -117,10 +126,71 @@ def shuffleLists(x, y):
 
 ################################################################################
 
+# Returns source's similarity to people who follow sink
+def sourceSimilarity(source, sink, sourceDict, sinkDict):
+
+    averageSimilarity = 0.0
+    following = sourceDict.get(source, [])
+    a = len(following)
+
+    for follower in sinkDict.get(sink, []):
+        b = len(sourceDict.get(follower, []))
+        union = len(list(set(following + sourceDict.get(follower, []))))
+        intersect = a + b - union
+        similarity = intersect / union
+        averageSimilarity += similarity
+
+    try:
+        averageSimilarity /= len(sinkDict.get(sink, []))
+        return averageSimilarity
+    except:
+        return 0.0
+
+################################################################################
+
+# Returns sink's similarity to people that source is following
+def sinkSimilarity(source, sink, sourceDict, sinkDict):
+
+    averageSimilarity = 0.0
+    followers = sinkDict.get(sink, [])
+    a = len(followers)
+
+    for following in sourceDict.get(source, []):
+        b = len(sinkDict.get(following, []))
+        union = len(list(set(followers + sinkDict.get(following, []))))
+        intersect = a + b - union
+        similarity = intersect / union
+        averageSimilarity += similarity
+
+    try:
+        averageSimilarity /= len(sourceDict.get(source, []))
+        return averageSimilarity
+    except:
+        return 0.0
+
+################################################################################
+
+# Converts the given x data to our features
+def processFeatures(x, sourceDict, sinkDict):
+
+    newX = []
+
+    for (source, sink) in x:
+        # f1 = isSymmetric(source, sink, sourceDict)
+        # f2 = isTransitive(source, sink, sourceDict)
+        f3 = sourceSimilarity(source, sink, sourceDict, sinkDict)
+        f4 = sinkSimilarity(source, sink, sourceDict, sinkDict)
+        newX.append((f3, f4))
+
+    return newX
+
+################################################################################
+
 totalStart = timer()
 
 start = timer()
-edgeDict, xTrain, yTrain, xDev, yDev = processTrainingFile(TRAIN_FILE)
+sourceDict, sinkDict, xTrain, yTrain, xDev, yDev = \
+            processTrainingFile(TRAIN_FILE)
 end = timer()
 print("Time taken to process training data: {:.2f} secs".format(end - start))
 # print("Number of training instances: {}".format(len(xTrain)))
@@ -132,18 +202,29 @@ end = timer()
 print("Time taken to process test data: {:.2f} secs".format(end - start))
 # print("Number of test instances: {}".format(len(xTest)))
 
+start = timer()
+xTrain = processFeatures(xTrain, sourceDict, sinkDict)
+xDev = processFeatures(xDev, sourceDict, sinkDict)
+xTest = processFeatures(xTest, sourceDict, sinkDict)
+end = timer()
+print("Time taken to process edges: {:.2f} secs".format(end - start))
+
 xTrain, yTrain = shuffleLists(xTrain, yTrain)
 xDev, yDev = shuffleLists(xDev, yDev)
 
-predictions = runNN(xTrain, yTrain, xDev, hidden_layers = [100, 25])
+predictions = runNN(xTrain, yTrain, xDev, hidden_layers = [5])
+
+print("First 10 predictions:")
+print(predictions[:10])
 
 printAccuracy(yDev, predictions)
 
 '''
 evaluate(yDev, predictions)
 writeToFile(predictions)
-plotData(xDev)
 '''
+
+# plotData(xDev, yDev)
 
 totalEnd = timer()
 print("Total elapsed time: {:.2f} secs".format(totalEnd - totalStart))

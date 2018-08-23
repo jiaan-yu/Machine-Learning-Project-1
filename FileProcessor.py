@@ -7,8 +7,8 @@ from Constants import *
 # Takes the training file and returns lists of training and test edges
 def processTrainingFile(file):
 
-    trainReal, devReal, edgeDict = getEdges(file)
-    trainFake, devFake = getFakeEdges(edgeDict, len(trainReal) + len(devReal))
+    trainReal, devReal, sourceDict, sinkDict = getEdges(file)
+    trainFake, devFake = getFakeEdges(sourceDict, len(trainReal) + len(devReal))
 
     xTrain = trainReal + trainFake
     yTrain = [REAL for i in range(len(trainReal))] \
@@ -18,7 +18,7 @@ def processTrainingFile(file):
     yDev = [REAL for i in range(len(devReal))] \
          + [FAKE for i in range(len(devFake))]
 
-    return edgeDict, xTrain, yTrain, xDev, yDev
+    return sourceDict, sinkDict, xTrain, yTrain, xDev, yDev
 
 ################################################################################
 
@@ -48,26 +48,30 @@ def getEdges(file):
     trainReal = edges[:TRAINING_LIMIT]
     devReal = edges[-DEV_LIMIT:]
 
-    edgeDict = {}
+    sourceDict = {}
+    sinkDict = {}
     
     for (source, sink) in trainReal:
-        edgeDict[source] = edgeDict.get(source, [])
-        edgeDict[source].append(sink)
+        sourceDict[source] = sourceDict.get(source, [])
+        sourceDict[source].append(sink)
+        sinkDict[sink] = sinkDict.get(sink, [])
+        sinkDict[sink].append(source)
+        
 
-    return trainReal, devReal, edgeDict
+    return trainReal, devReal, sourceDict, sinkDict
 
 ################################################################################
 
 # Returns a list of N fake edges that do not exist in the training or test data
-def getFakeEdges(edgeDict, n):
+def getFakeEdges(sourceDict, n):
 
     fakeEdges = []
 
     # Make a list of all nodes that appear in the training data
-    potentialSources = list(edgeDict.keys())
+    potentialSources = list(sourceDict.keys())
     potentialSinks = []
-    for key in edgeDict.keys():
-        for value in edgeDict[key]:
+    for key in sourceDict.keys():
+        for value in sourceDict[key]:
             potentialSinks.append(value)
         potentialSinks.append(key)
     potentialSinks = list(set(potentialSinks))
@@ -77,7 +81,7 @@ def getFakeEdges(edgeDict, n):
         sink = random(potentialSinks)
 
         # Make sure it isn't duplicate nor following itself
-        if (source != sink and sink not in edgeDict[source]
+        if (source != sink and sink not in sourceDict[source]
             and (source, sink) not in fakeEdges):
 
             fakeEdges.append((source, sink))

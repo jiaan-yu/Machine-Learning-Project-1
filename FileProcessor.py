@@ -117,3 +117,31 @@ def processTestFile(file):
     return xTest
 
 ################################################################################
+
+# Loads a file containing features into lists of labels and features
+def processFeatureFile(filename):
+
+    file = open(filename, 'r')
+    lines = file.readlines()[1:]
+    x = []
+    y = []
+
+    for line in lines:
+        line = line.strip("\n")
+        line = line.split(",")
+        instance = tuple([float(line[i + 1]) for i in range(FEATURES)])
+        x.append(instance)
+        
+        try:
+            label = int(line[FEATURES + 1])
+            y.append(label)
+        except:
+            # Test data has no labels
+            continue
+
+    if (len(y) > 0):
+        return x, y
+    else:
+        return x
+
+################################################################################

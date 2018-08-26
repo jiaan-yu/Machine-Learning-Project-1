@@ -1,4 +1,5 @@
 from matplotlib import pyplot as plt
+from sklearn.metrics import roc_auc_score
 
 from Constants import *
 
@@ -7,8 +8,8 @@ from Constants import *
 # Prints a summary of the results
 def evaluate(real, predictions):
     printAccuracy(real, predictions)
-    AUC = calculateAUC(real, predictions, plotAUC = False)
-    print("AUC: {:.2f}".format(AUC))
+    AUC = roc_auc_score(real, predictions)
+    print("AUC: {:.4f}".format(AUC))
     print("Mark = {:.1f} / 9".format(9 * max(min(AUC, 0.9) - 0.4, 0.0) / 0.5))
 
 ################################################################################

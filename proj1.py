@@ -7,7 +7,8 @@ from W5_Adaptation import runNN
 from FeatureProcessor import processFeatures
 from SplitClassifier import splitClassifier
 from NeighbourClassifier import neighbourClassifier
-from FileProcessor import processTrainingFile, processTestFile
+from FileProcessor import processTrainingFile, processTestFile, \
+                          processFeatureFile
 
 ################################################################################            
 
@@ -18,7 +19,7 @@ def randomClassifier(x):
 ################################################################################
 
 # Plots the given data with the colour representing real and fake
-def plotData(features, labels):
+def plotData(features, labels, title = None):
 
     reals = []
     fakes = []
@@ -36,6 +37,10 @@ def plotData(features, labels):
     
     plt.scatter(xReal, yReal, color = 'blue')
     plt.scatter(xFake, yFake, color = 'orange')
+
+    if (title is not None):
+        plt.title(title)
+    
     plt.show()
 
 ################################################################################
@@ -87,6 +92,39 @@ def saveFile(data):
 
 ################################################################################
 
+# Saves a given list of features to a file
+def saveFeatureFile(filename, x, y = None):
+
+    # Initialise header row
+    data = "Id"
+    for i in range(0, FEATURES):
+        data += ",f{}".format(i + 1)
+
+    if (y is None):
+        data += "\n"
+    else:
+        data += ",label\n"
+
+    # Write instances as rows
+    for i in range(len(x)):
+
+        data += "{}".format(i)
+        for j in range(0, FEATURES):
+            data += ",{}".format(x[i][j])
+
+        # Add label to last column if applicable
+        if (y is None):
+            data += "\n"
+        else:
+            data += ",{}\n".format(y[i])
+
+    file = open(filename, 'w')
+    file.write(data)
+    file.close()
+    print("File saved successfully.")
+
+################################################################################
+
 # Shuffles two lists around (both are shuffled in the same way)
 def shuffleLists(x, y):
 
@@ -104,45 +142,111 @@ def shuffleLists(x, y):
 
 ################################################################################
 
-# Attempt 1
-predictions = splitClassifier(TEST_FEATURES_FILE)
+# Creates new data files to use in place of the given ones
+def createFeatureFiles(verbose = False):
+
+    start = timer()
+    sourceDict, sinkDict, xTrain, yTrain, xDev, yDev = \
+                processTrainingFile(TRAIN_FILE, verbose = verbose)
+    end = timer()
+    
+    if (verbose):
+        print("Time taken to process training data: {:.2f} secs"
+              .format(end - start))
+        print("Number of training instances: {}".format(len(xTrain)))
+        print("Number of development instances: {}".format(len(xDev)))
+
+    start = timer()
+    xTest = processTestFile(TEST_FILE)
+    end = timer()
+    
+    if (verbose):
+        print("Time taken to process test data: {:.2f} secs"
+              .format(end - start))
+        print("Number of test instances: {}".format(len(xTest)))
+
+    # Convert files to our features
+    start = timer()
+    xTrain = processFeatures(xTrain, sourceDict, sinkDict, verbose = verbose)
+    saveFeatureFile("training-features.txt", xTrain, yTrain)
+    xDev = processFeatures(xDev, sourceDict, sinkDict, verbose = verbose)
+    saveFeatureFile("development-features.txt", xDev, yDev)
+    xTest = processFeatures(xTest, sourceDict, sinkDict, verbose = verbose)
+    saveFeatureFile("test-features.txt", xTest)
+    end = timer()
+
+    if (verbose):
+        print("Time taken to process features: {:.2f} secs"
+              .format(end - start))
+
+    print("Feature files created successfully.")
+
+################################################################################
+
+# Ensures no features have values of 0.0
+def addE(x):
+
+    for i in range(len(x)):
+        x[i] = list(x[i])
+        for j in range(FEATURES):
+            x[i][j] += 0.001
+        x[i] = tuple(x[i])
+
+    return x
+
+################################################################################
+
+# Reduces the dimensionality of x to the two selected features
+def reduceFeatures(x, indexes):
+
+    reducedX = []
+
+    for i in range(len(x)):
+        features = [x[i][index] for index in indexes]
+        reducedX.append(tuple(features))
+
+    return reducedX
+
+################################################################################
 
 totalStart = timer()
 
-start = timer()
-sourceDict, sinkDict, xTrain, yTrain, xDev, yDev = \
-            processTrainingFile(TRAIN_FILE)
-end = timer()
-print("Time taken to process training data: {:.2f} secs".format(end - start))
-# print("Number of training instances: {}".format(len(xTrain)))
-# print("Number of development instances: {}".format(len(xDev)))
-
-start = timer()
-xTest = processTestFile(TEST_FILE)
-end = timer()
-print("Time taken to process test data: {:.2f} secs".format(end - start))
-# print("Number of test instances: {}".format(len(xTest)))
-
-start = timer()
-xTrain = processFeatures(xTrain, sourceDict, sinkDict)
-xDev = processFeatures(xDev, sourceDict, sinkDict)
-xTest = processFeatures(xTest, sourceDict, sinkDict)
-end = timer()
-print("Time taken to process edges: {:.2f} secs".format(end - start))
-
+xTrain, yTrain = processFeatureFile(TRAINING_FEATURES_FILE)
 xTrain, yTrain = shuffleLists(xTrain, yTrain)
+
+xTrain = xTrain[:2 * TRAINING_LIMIT]
+yTrain = yTrain[:2 * TRAINING_LIMIT]
+
+xDev, yDev = processFeatureFile(DEVELOPMENT_FEATURES_FILE)
 xDev, yDev = shuffleLists(xDev, yDev)
 
-predictions = runNN(xTrain, yTrain, xDev, hidden_layers = [5])
-printAccuracy(yDev, predictions)
+xTest = processFeatureFile(TEST_FEATURES_FILE)
 
-'''
-evaluate(yDev, predictions)
+# Ensure no features are 0.0
+xTrain = addE(xTrain)
+xDev = addE(xDev)
+xTest = addE(xTest)
+
+features = [4]
+hidden_layers = [2]
+
+xTrain = reduceFeatures(xTrain, features)
+xDev = reduceFeatures(xDev, features)
+xTest = reduceFeatures(xTest, features)
+
+testing = True
+
+if (testing):
+    predictions = runNN(xTrain, yTrain, xTest, hidden_layers = hidden_layers)
+else:
+    predictions = runNN(xTrain, yTrain, xDev, hidden_layers = hidden_layers)
+    evaluate(yDev, predictions)
+
 writeToFile(predictions)
-plotData(xDev, yDev)
-'''
 
 totalEnd = timer()
+print("Features: {}".format(features))
+print("Hidden Layers: {}".format(hidden_layers))
 print("Total elapsed time: {:.2f} secs".format(totalEnd - totalStart))
 
 ################################################################################

@@ -1,3 +1,5 @@
+# Note: This file is from the week 5 workshop with minor additions
+
 import tensorflow as tf
 import numpy as np
 
@@ -11,13 +13,13 @@ class DatasetIterator:
     from a data set (with features and labels)
     """
     def __init__(self, features, labels):
-        assert(features.shape[0]==labels.shape[0])
+        assert(features.shape[0] == labels.shape[0])
         assert(BATCH_SIZE > 0 and BATCH_SIZE <= features.shape[0])
         self.features = features
         self.labels = labels
         self.num_instances = features.shape[0]
-        self.num_batches = self.num_instances//BATCH_SIZE
-        if (self.num_instances%BATCH_SIZE!=0):
+        self.num_batches = self.num_instances // BATCH_SIZE
+        if (self.num_instances % BATCH_SIZE != 0):
             self.num_batches += 1
         self._i = 0
         self._rand_ids = None
@@ -42,7 +44,7 @@ class DatasetIterator:
 ################################################################################
 
 # Runs a neural network in TensorFlow to make predictions on the data
-def runNN(xTrain, yTrain, xTest, hidden_layers = [5]):
+def runNN(xTrain, yTrain, xTest, hidden_layers = []):
 
     # The number of features and labels in the given data
     num_features = len(xTrain[0])
@@ -100,22 +102,25 @@ def runNN(xTrain, yTrain, xTest, hidden_layers = [5]):
         
         loss = tf.losses.mean_squared_error(Y, Y_pred)
     
-    opt = tf.train.GradientDescentOptimizer(0.005)
+    opt = tf.train.GradientDescentOptimizer(LEARNING_RATE)
     opt_operation = opt.minimize(loss)
 
-    init = tf.global_variables_initializer()
-
     with tf.Session() as sess:
-        sess.run(init)
+        sess.run(tf.global_variables_initializer())
+        sess.run(tf.local_variables_initializer())
+
+        start = timer()
         
         # Run gradient descent for multiple epochs
         for epoch in range(EPOCHS):
-            avg_loss = 0 # average loss over all batches
+            avg_loss = 0
             for X_batch, Y_batch in train_iterator:
                 _, l = sess.run([opt_operation, loss], \
-                           feed_dict = {X: X_batch, Y: Y_batch})                
+                                  feed_dict = {X: X_batch, Y: Y_batch})
                 avg_loss += l / train_iterator.num_batches
-            print("Epoch {}: loss = {:.4}".format(epoch + 1, avg_loss))
+            current = timer()
+            print("Epoch {} / {}: loss = {:.4f} ({:.2f} secs)"
+                  .format(epoch + 1, EPOCHS, avg_loss, current - start))
         print("Optimization complete.")
 
         # Make predictions

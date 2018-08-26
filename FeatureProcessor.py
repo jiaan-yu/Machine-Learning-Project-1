@@ -1,3 +1,5 @@
+from math import sqrt
+
 from Constants import *
 
 ################################################################################
@@ -12,13 +14,28 @@ def processFeatures(x, sourceDict, sinkDict, verbose = False):
 
     start = timer()
 
+    '''
+    Features
+    f1 - Average similarity between source and those who follow sink
+    f2 - Standard deviation in similarity between
+            source and those who follow sink
+    f3 - Maximum similarity between source and those who follow sink
+    f4 - 1.0 / average similarity, which is used in exponential distributions
+    
+    f5 - Average similarity between sink and those who source follows
+    f6 - Standard deviation in similarity between
+            sink and those who source follows
+    f7 - Maximum similarity between sink and those who source follows
+    f8 - 1.0 / average similarity, which is used in exponential distributions
+    '''
     for (source, sink) in x:
-        # f1 = isSymmetric(source, sink, sourceDict)
-        # f2 = isTransitive(source, sink, sourceDict)
-        f1, f3 = sourceSimilarity(source, sink, sourceDict, sinkDict)
-        f2, f4 = sinkSimilarity(source, sink, sourceDict, sinkDict)
+        sourceFeats = sourceSimilarity(source, sink, sourceDict, sinkDict)
+        sinkFeats = sinkSimilarity(source, sink, sourceDict, sinkDict)
+
+        features = tuple([f for f in sourceFeats] + [f for f in sinkFeats])
+        assert (len(features) == FEATURES)
         
-        newX.append((f1, f2, f3, f4))
+        newX.append(features)
 
         if (verbose):
             count += 1
@@ -62,55 +79,62 @@ def sourceSimilarity(source, sink, sourceDict, sinkDict):
     following = sourceDict.get(source, [])
     a = len(following)
 
+    similarities = []
+
+    '''
+    Get list of similarities by comparing source's
+    following tastes to those who follow sink
+    '''
     for follower in sinkDict.get(sink, []):
         neighbourFollowing = sourceDict.get(follower, [])
         b = len(neighbourFollowing)
         union = len(list(set(following + neighbourFollowing)))
         intersect = a + b - union
-        similarity = intersect / union
-        averageSimilarity += similarity
-        
-        if (similarity > maxSimilarity):
-            maxSimilarity = similarity
-        
+        sim = (2 * intersect) / (a + b)
+        similarities.append(sim)
 
-    neighbourCount = len(sinkDict.get(sink, []))
-
-    # Normalise to range [-1, 1]
-    if (neighbourCount > 0):
-        averageSimilarity /= neighbourCount
-        return 2.0 * averageSimilarity - 1.0, 2.0 * maxSimilarity - 1.0
-    else:
-        return -1.0, -1.0
+    return calculateFeatures(similarities)
     
 ################################################################################
 
 # Returns sink's similarity to people that source is following
 def sinkSimilarity(source, sink, sourceDict, sinkDict):
 
-    averageSimilarity = 0.0
-    maxSimilarity = 0.0
+    similarities = []
     followers = sinkDict.get(sink, [])
     a = len(followers)
-
+    
+    '''
+    Get list of similarities by comparing sink's
+    profile to the profiles source is following
+    '''
     for following in sourceDict.get(source, []):
         neighbourFollowers = sinkDict.get(following, [])
         b = len(neighbourFollowers)
         union = len(list(set(followers + neighbourFollowers)))
         intersect = a + b - union
-        similarity = intersect / union
-        averageSimilarity += similarity
+        sim = (2 * intersect) / (a + b)
+        similarities.append(sim)
 
-        if (similarity > maxSimilarity):
-            maxSimilarity = similarity
+    return calculateFeatures(similarities)
 
-    neighbourCount = len(sourceDict.get(source, []))
+################################################################################
 
-    # Normalise to range [-1, 1]
-    if (neighbourCount > 0):
-        averageSimilarity /= neighbourCount
-        return 2.0 * averageSimilarity - 1.0, 2.0 * maxSimilarity - 1.0
-    else:
-        return -1.0, -1.0
+# Calculates features based on several aspects of node similarities
+def calculateFeatures(similarities):
+
+    try:
+        meanSimilarity = sum(similarities) / len(similarities)
+        varSimilarity = sum([(similarities[i] - meanSimilarity)**2
+                             for i in range(len(similarities))])
+        varSimilarity /= len(similarities)
+        stdSimilarity = sqrt(varSimilarity)
+        maxSimilarity = max(similarities)
+        lamb = 1.0 / meanSimilarity
+
+        return (meanSimilarity, stdSimilarity, maxSimilarity, lamb)
+    except:
+        # In case len(similarities) == 0
+        return (0, 0, 0, 0)
 
 ################################################################################

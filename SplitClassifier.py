@@ -7,7 +7,7 @@ def splitClassifier(filename):
 
     file = open(filename, 'r')
     lines = file.readlines()[1:]
-    xTest = []
+    x = []
 
     # Read file into a list of tuples
     for line in lines:
@@ -15,12 +15,12 @@ def splitClassifier(filename):
         line = line.split(",")
         f1 = float(line[1])
         f2 = float(line[2])
-        xTest.append((f1, f2))
+        x.append((f1, f2))
 
-    split = findSplit(xTest)
+    split = findSplit(x)
     predictions = []
     
-    for (f1, f2) in xTest:
+    for (f1, f2) in x:
         if (f1 + f2 > split):
             predictions.append(0.99)
         else:

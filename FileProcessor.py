@@ -50,7 +50,7 @@ def getEdges(file, verbose):
     devReal = edges[-DEV_LIMIT:]
 
     # Our dictionaries should be unaware of the development data
-    edges = edges[:-DEV_LIMIT]
+    #edges = edges[:-DEV_LIMIT]
 
     sourceDict = {}
     sinkDict = {}
@@ -144,4 +144,7 @@ def processFeatureFile(filename):
     else:
         return x
 
-################################################################################
+
+
+
+

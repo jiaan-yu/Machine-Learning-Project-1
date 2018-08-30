@@ -22,7 +22,7 @@ DEVELOPMENT_FEATURES_FILE = "development-features.txt"
 TEST_FEATURES_FILE = "test-features.txt"
 
 # The number of features per instance in the processed files
-FEATURES = 8
+FEATURES = 4
 
 # The prefix of the file that we save our predictions to
 SAVE_FILE = "predictions-"

@@ -52,19 +52,24 @@ def processFeatures(x, sourceDict, sinkDict, verbose = False):
     start = timer()
 
     '''
-    Features
-    f1 - Average similarity between source and those who follow sink
-    f2 - Standard deviation in similarity between
-            source and those who follow sink
-    f3 - Maximum similarity between source and those who follow sink
-    f4 - 1.0 / average similarity, which is used in exponential distributions
-    
-    f5 - Average similarity between sink and those who source follows
-    f6 - Standard deviation in similarity between
-            sink and those who source follows
-    f7 - Maximum similarity between sink and those who source follows
-    f8 - 1.0 / average similarity, which is used in exponential distributions
+    Features(similarity formula are from https://arxiv.org/pdf/0901.0553.pdf)
+    f1 - Average similarity between source and those who follow sink (formula 1)
+    f2 - Maximum similarity between source and those who follow sink (formula 1)
+    f3 - Average similarity between source and those who follow sink (formula 2)
+    f4 - Maximum similarity between source and those who follow sink (formula 2)
+    ...
+    ...
+    f13 - Average similarity between source and those who follow sink (formula 7)
+    f14 - Maximum similarity between source and those who follow sink (formula 7)
+    f15 - Average similarity between sink and those who source follows (formula 1)
+    f16 - Maximum similarity between sink and those who source follows (formula 1)
+    ...
+    ...
+    f27 - Average similarity between sink and those who source follows (formula 7)
+    f28 - Maximum similarity between sink and those who source follows (formula 7)
     '''
+
+
     for (source, sink) in x:
         
         sourceFeats = sourceSimilarity(source, sink, sourceDict, sinkDict)
@@ -82,14 +87,6 @@ def processFeatures(x, sourceDict, sinkDict, verbose = False):
                   .format(count, total, end - start))
 
     return newX
-
-################################################################################
-
-# Returns True if (sink -> source)
-def isSymmetric(source, sink, sourceDict):
-    return 1 if (source in sourceDict.get(sink, [])) else -1
-
-
 
 ################################################################################
 

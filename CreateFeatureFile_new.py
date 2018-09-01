@@ -136,6 +136,8 @@ def SourceAndSinkSimilarity(source, sink, sourceDict, sinkDict):
     else:
         features += [0] * 7
 
+    return features
+
 # similarity methods indexed corresponding to https://arxiv.org/pdf/0901.0553.pdf
 def calcualteSimilarity(x, y):
     # x, y should be non-empty set of neighbours

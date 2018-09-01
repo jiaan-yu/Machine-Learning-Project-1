@@ -1,6 +1,4 @@
 from math import sqrt, log
-import numpy as np
-import pandas as pd
 from Constants import *
 from FileProcessor import processTrainingFile, processTestFile, \
                           processFeatureFile
@@ -101,32 +99,42 @@ def SourceAndSinkSimilarity(source, sink, sourceDict, sinkDict):
     except:
         pass
 
-    SourceSimilarities = pd.DataFrame(columns = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'])
-    SinkSimilarities = pd.DataFrame(columns = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'])
+    SourceSimilarities = []
+    SinkSimilarities = []
 
 
     #source similarity
     for follower in followers:
         neighbourFollowings = sourceDict.get(follower, [])
         
-        SourceSimilarities.loc[len(SourceSimilarities)] = \
-            calcualteSimilarity(neighbourFollowings, followings)
+        SourceSimilarities.append(
+            calcualteSimilarity(neighbourFollowings, followings))
+            
     
     #Sink Similarities
     for following in followings:
         neighbourFollowers = sinkDict.get(following, [])
-        SinkSimilarities.loc[len(SinkSimilarities)] = \
-            calcualteSimilarity(neighbourFollowers, followers)
+        SinkSimilarities.append(
+            calcualteSimilarity(neighbourFollowers, followers))
     
     #output mean and max value in each column as features
     features = []
-    for col in SourceSimilarities.columns:
-        features.append(SourceSimilarities[col].mean())
-        features.append(SourceSimilarities[col].max()) 
-    for col in SinkSimilarities.columns:
-        features.append(SinkSimilarities[col].mean())
-        features.append(SinkSimilarities[col].max()) 
-    return tuple(features)
+    if len(SourceSimilarities):
+        for i in range(7):
+            features_list = [x[i] for x in SourceSimilarities]
+            features.append(sum(features_list)/len(features_list))
+            features.append(max(features_list))
+    else:
+        features += [0] * 7
+         
+
+    if len(SinkSimilarities):
+        for i in range(7):
+            features_list = [x[i] for x in SinkSimilarities]
+            features.append(sum(features_list)/len(features_list))
+            features.append(max(features_list))
+    else:
+        features += [0] * 7
 
 # similarity methods indexed corresponding to https://arxiv.org/pdf/0901.0553.pdf
 def calcualteSimilarity(x, y):

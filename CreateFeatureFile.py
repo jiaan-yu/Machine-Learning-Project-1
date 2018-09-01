@@ -6,15 +6,16 @@ from FileProcessor import processTrainingFile, processTestFile, \
                           processFeatureFile
 
 
+################################################################################
+
 # Saves a given list of features to a file
 def saveFeatureFile(filename, x, y = None):
 
     # Initialise header row
-    # Skip the max similarity, 
     data = "Id"
     for i in range(0, len(x[0])):
         data += ",f{}".format(i + 1)
-    
+
     if (y is None):
         data += "\n"
     else:
@@ -41,9 +42,10 @@ def saveFeatureFile(filename, x, y = None):
 ################################################################################
 
 # Features generated based on different similarity metrics
-# Input: a list of pairwise (source, sink) + source/sink dictionary
+# Input: a list of tuple (source, sink) + source/sink dictionary
 # Output: a list which contains features for each pair in tuple (source feats 
 # + sink feats)
+
 def processFeatures(x, sourceDict, sinkDict, verbose = False):
 
     newX = []
@@ -73,13 +75,7 @@ def processFeatures(x, sourceDict, sinkDict, verbose = False):
 
 
     for (source, sink) in x:
-        
-        sourceFeats = sourceSimilarity(source, sink, sourceDict, sinkDict)
-        sinkFeats = sinkSimilarity(source, sink, sourceDict, sinkDict)
-
-        features = tuple(sourceFeats + sinkFeats)
-        #assert (len(features) == FEATURES)
-        
+        features = SourceAndSinkSimilarity(source, sink, sourceDict, sinkDict)
         newX.append(features)
 
         if (verbose):
@@ -92,116 +88,50 @@ def processFeatures(x, sourceDict, sinkDict, verbose = False):
 
 ################################################################################
 
-# Calcualte the source's similarity to people who follow sink
-# Output: [s1mean, s1max, s2mean,.....]
-def sourceSimilarity(source, sink, sourceDict, sinkDict):
+# Calcualte the similarity between source and sink
+# Output: a tuple of features for (source, sink)
 
-    # #Jiaan to Yupei: this part is redundant, no node or edge need to be removed
-    # #remove the edge from Dictionary if exist
+def SourceAndSinkSimilarity(source, sink, sourceDict, sinkDict):
     
-    # try:
-    #     sourceDict[source].remove(sink)
-    #     sinkDict[sink].remove(source)
-    #     label = 1
-    # except:
-    #     label = 0
+    followings = sourceDict.get(source, []).copy()
+    followers = sinkDict.get(sink, []).copy()
+    
+    # remove the edge if existing
+    try:
+        followings.remove(sink)
+        followers.remove(source)
+    except:
+        pass
+
+    SourceSimilarities = pd.DataFrame(columns = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'])
+    SinkSimilarities = pd.DataFrame(columns = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'])
 
 
-    following = sourceDict.get(source, [])
-    # Dataframe: columns: different similarity metrics; rows: pairs of followers/following
-    similarities = pd.DataFrame(columns = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'])
-    columns = ['s1', 's2', 's3', 's4', 's5', 's6', 's7']
-
-    '''
-    Get list of similarities by comparing source's
-    following states to those who follow sink
-    '''
-    print(len(sinkDict.get(sink, [])))
-    for i,follower in enumerate(sinkDict.get(sink, [])):
-        neighbourFollowing = sourceDict.get(follower, [])
-        
-        # write a row to dataframe
-        similarities.loc[i] = \
-            calcualteSimilarity(neighbourFollowing, following)
-        #print(similarities.loc[i])
-
-
+    #source similarity
+    for i,follower in enumerate(followers):
+        neighbourFollowings = sourceDict.get(follower, [])
+        SourceSimilarities.loc[i] = \
+            calcualteSimilarity(neighbourFollowings, followings)
+    
+    #Sink Similarities
+    for i,following in enumerate(followings):
+        neighbourFollowers = sinkDict.get(following, [])
+        SinkSimilarities.loc[i] = \
+            calcualteSimilarity(neighbourFollowers, followers)
+    
+    #output mean and max value in each column as features
     features = []
-    # Calculate mean / max from the dataframe
-    for col in columns:
-        features.append(similarities[col].mean())
-        features.append(similarities[col].max())
-    
+    for col in SourceSimilarities.columns:
+        features.append(SourceSimilarities[col].mean())
+        features.append(SourceSimilarities[col].max()) 
+    for col in SinkSimilarities.columns:
+        features.append(SinkSimilarities[col].mean())
+        features.append(SinkSimilarities[col].max()) 
+    return tuple(features)
 
-    # features = []
-    # for column in similarities.columns:
-    #     mean_, max_ = calculateFeatures(similarities[column])
-    #     features.append(mean_)
-    #     features.append(max_)
-
-    # #put the removed edge back into the Dict
-    # if label == 1:
-    #     sourceDict[source].append(sink)
-    #     sinkDict[sink].append(source)
-
-    return features
-    
 ################################################################################
 
-# Calculate sink's similarity to people that source is following
-# Output: [s1mean, s1max, s2mean,.....]
-def sinkSimilarity(source, sink, sourceDict, sinkDict):
-    
-    # #remove the edge from Dictionary if exist
-    # try:
-    #     sourceDict[source].remove(sink)
-    #     sinkDict[sink].remove(source)
-    #     label = 1
-    # except:
-    #     label = 0
-    
-
-    followers = sinkDict.get(sink, [])
-    similarities = pd.DataFrame(columns = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'])
-    columns = ['s1', 's2', 's3', 's4', 's5', 's6', 's7']
-    
-    '''
-    Get list of similarities by comparing sink's
-    profile to the profiles source is following
-    '''
-    for i,following in enumerate(sourceDict.get(source, [])):
-        neighbourFollowers = sinkDict.get(following, [])
-
-
-        similarities.loc[i] = \
-            calcualteSimilarity(neighbourFollowers, followers)
-
-    features = []
-    # Calculate column mean / max from the dataframe
-    for col in columns:
-        features.append(similarities[col].mean())
-        features.append(similarities[col].max())
- 
- 
-    # #output table
-    # features = []ImportError
-    # for column in similarities.columns:
-    #     mean_, max_ = calculateFeatures(similarities[column])
-    #     features.append(mean_)
-    #     features.append(max_)
-
-    # #put the removed edge back into the Dict
-    # if label == 1:
-    #     sourceDict[source].append(sink)
-    #     sinkDict[sink].append(source)
-
-    return features
-
-#############################################################################
-
 # similarity methods indexed corresponding to https://arxiv.org/pdf/0901.0553.pdf
-# Input: two lists of followers / following
-# Output: a list of similarities
 def calcualteSimilarity(x, y):
     # x, y should be non-empty set of neighbours
     x = set(x)
@@ -218,23 +148,25 @@ def calcualteSimilarity(x, y):
         return [s1, s2 ,s3, s4, s5, s6, s7]
     return [0, 0, 0, 0, 0, 0, 0]
 
+
 ################################################################################
 
 verbose = True
 
 sourceDict, sinkDict, xTrain, yTrain, xDev, yDev =\
-                        processTrainingFile(TRAIN_FILE, verbose)
+                        processTrainingFile(TRAIN_FILE, verbose = True)
+
 xTest = processTestFile(TEST_FILE)
 
 # Creates new data files to use in place of the given ones
 # Convert files to our features
 
 start = timer()
-xTrain = processFeatures(xTrain, sourceDict, sinkDict, verbose)
+xTrain = processFeatures(xTrain, sourceDict, sinkDict, verbose = verbose)
 saveFeatureFile("training-features.txt", xTrain, yTrain)
-xDev = processFeatures(xDev, sourceDict, sinkDict, verbose)
+xDev = processFeatures(xDev, sourceDict, sinkDict, verbose = verbose)
 saveFeatureFile("development-features.txt", xDev, yDev)
-xTest = processFeatures(xTest, sourceDict, sinkDict, verbose)
+xTest = processFeatures(xTest, sourceDict, sinkDict, verbose = verbose)
 saveFeatureFile("test-features.txt", xTest)
 end = timer()
 
@@ -244,4 +176,4 @@ if (verbose):
 
 print("Feature files created successfully.")
 
-################################################################################
+################################################

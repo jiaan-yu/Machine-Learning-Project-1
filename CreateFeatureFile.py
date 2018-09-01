@@ -120,16 +120,11 @@ def sourceSimilarity(source, sink, sourceDict, sinkDict):
     for i,follower in enumerate(sinkDict.get(sink, [])):
         neighbourFollowing = sourceDict.get(follower, [])
         
-        print(len(neighbourFollowing))
-        print(len(following))
-        
         # write a row to dataframe
         similarities.loc[i] = \
             calcualteSimilarity(neighbourFollowing, following)
         #print(similarities.loc[i])
 
-
-    print(similarities)
 
     features = []
     # Calculate mean / max from the dataframe
@@ -137,7 +132,6 @@ def sourceSimilarity(source, sink, sourceDict, sinkDict):
         features.append(similarities[col].mean())
         features.append(similarities[col].max())
     
-    print(features)
 
     # features = []
     # for column in similarities.columns:
@@ -175,12 +169,9 @@ def sinkSimilarity(source, sink, sourceDict, sinkDict):
     Get list of similarities by comparing sink's
     profile to the profiles source is following
     '''
-    print(sourceDict.get(source, []))
     for i,following in enumerate(sourceDict.get(source, [])):
         neighbourFollowers = sinkDict.get(following, [])
 
-        print(len(followers))
-        print(len(neighbourFollowers))
 
         similarities.loc[i] = \
             calcualteSimilarity(neighbourFollowers, followers)

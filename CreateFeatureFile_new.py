@@ -133,15 +133,15 @@ def calcualteSimilarity(x, y):
     # x, y should be non-empty set of neighbours
     x = set(x)
     y = set(y)
-
+    intersect = len(x & y)
     try:
-        s1 = len(x & y)
-        s2 = len(x & y) / sqrt(len(x) * len(y))
-        s3 = len(x & y) / len(x | y)
-        s4 = 2 * len(x & y) / (len(x) + len(y))
-        s5 = len(x & y) / min(len(x), len(y))
-        s6 = len(x & y) / max(len(x), len(y))
-        s7 = len(x & y) / (len(x) * len(y))
+        s1 = intersect
+        s2 = intersect / sqrt(len(x) * len(y))
+        s3 = intersect / (len(x) + len(y) - intersect)
+        s4 = 2 * intersect / (len(x) + len(y))
+        s5 = intersect / min(len(x), len(y))
+        s6 = intersect / max(len(x), len(y))
+        s7 = intersect / (len(x) * len(y))
         return s1, s2 ,s3, s4, s5, s6, s7
     except: # len(x)*len(y) == 0
         return (0, 0, 0, 0, 0, 0, 0)

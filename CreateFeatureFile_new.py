@@ -20,9 +20,10 @@ def saveFeatureFile(filename, x, y = None):
 
     # Write instances as rows
     for i in range(len(x)):
-
+        print(i)
         data += "{}".format(i)
         for j in range(0, len(x[0])):
+            print(j)
             data += ",{}".format(x[i][j])
 
         # Add label to last column if applicable
@@ -125,7 +126,7 @@ def SourceAndSinkSimilarity(source, sink, sourceDict, sinkDict):
             features.append(sum(features_list)/len(features_list))
             features.append(max(features_list))
     else:
-        features += [0] * 7
+        features += [0] * 14
          
 
     if len(SinkSimilarities):
@@ -134,7 +135,7 @@ def SourceAndSinkSimilarity(source, sink, sourceDict, sinkDict):
             features.append(sum(features_list)/len(features_list))
             features.append(max(features_list))
     else:
-        features += [0] * 7
+        features += [0] * 14
 
     return features
 
